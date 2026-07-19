@@ -17,6 +17,6 @@
     "next-env.d.ts",
     "next.config.js",
     ".next/types/**/*.ts"
-  ],
+, "../../packages/db/auth-schema.ts"  ],
   "exclude": ["node_modules"]
 }
