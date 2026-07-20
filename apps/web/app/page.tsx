@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/lib/trpc";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function Home () {
@@ -10,11 +11,13 @@ export default function Home () {
   return (
     <main>
       <p className="flex flex-col text-2xl">
-        TillStock 
+        <Image src='/tillstock-logo_1.svg' alt="Logo" width={244} height={244} />
         <Button onClick={async () => {
           await authClient.signOut()
           router.push('/login')
-        }}>Cerrar sesion</Button>
+        }} 
+          className='max-w-xl'
+        >Cerrar sesion</Button>
       </p>
     </main>
   )

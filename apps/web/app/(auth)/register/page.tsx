@@ -7,42 +7,54 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
-import z from "zod"
+import { useRouter } from "next/navigation"
+import { z } from "zod"
 import { toast } from "sonner"
 
-const loginSchema = z.object({
-email: z.string().email('Email inválido'),
-password: z.string().min(1, 'La contraseña es requerida')
-})
+const schema = z.object({
+    name: z.string().min(1, 'El nombre es requerido'),
+    email: z.string().email('Email inválido'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
+    confirmPassword: z.string().min(1, 'Confirmá tu contraseña')
+}).refine(data => data.password === data.confirmPassword, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword']
+});
 
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
-    const result = loginSchema.safeParse({ email, password })
+export default function RegisterPage() {
+    const router = useRouter();
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+
+  const handleRegister = async () => {
+    const result = schema.safeParse({ name, email, password, confirmPassword})
 
     if(!result.success) {
         const firstError = result.error.issues[0]?.message
         return toast.error(firstError);
     }
-
-    const { error } = await authClient.signIn.email({
+    
+     await authClient.signUp.email({
+        name,
         email,
         password,
         callbackURL: '/dashboard'
-    })
+    });
 
-    if(error) {
-        return toast.error('Correo o contraseña incorrectos')
-    }  
+
+    router.push(`/dashboard`);
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-8">
+    <div className="bg-gray-50 flex items-center justify-center p-8">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl flex overflow-hidden">
         
         {/* Columna izquierda */}
@@ -51,7 +63,7 @@ export default function LoginPage() {
           <div className="mt-16">
             <h2 className="text-2xl font-semibold text-gray-900">Bienvenido a Tillstock</h2>
             <p className="text-gray-500 mt-3 text-sm leading-relaxed">
-              Iniciá sesión para acceder a tu panel y gestionar tu negocio de forma simple y eficiente.
+              Registrate para acceder a tu panel y gestionar tu negocio de forma simple y eficiente.
             </p>
             <ul className="mt-10 space-y-5">
               <li className="flex items-center gap-3 text-gray-600 text-sm">
@@ -69,10 +81,18 @@ export default function LoginPage() {
 
         {/* Columna derecha */}
         <div className="flex flex-col justify-center px-16 py-16 w-1/2 shrink-0 border-l border-gray-100">
-          <h1 className="text-2xl font-semibold text-gray-900">Iniciar sesión</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Registrarse</h1>
           <p className="text-gray-500 text-sm mt-2">Ingresá tus credenciales para continuar</p>
 
           <div className="mt-10 space-y-5">
+            <div className="space-y-2">
+              <Label>Nombre</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input placeholder="Ej: Juan Valdez" onChange={(e) => setName(e.target.value)} value={name} className="pl-9" />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Correo electrónico</Label>
               <div className="relative">
@@ -100,22 +120,20 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox id="remember" />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">Recuérdame</Label>
-              </div>
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
+                <div className="space-y-2">
+                    <Label>Confirmar contraseña</Label>
+                    <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input type={ showPassword ? 'text' : 'password'} placeholder="••••••••" onChange={(e) => setConfirmPassword(e.target.value)} value={confirmPassword} className="pl-9" />
+                        </div>
+                    </div>
+                </div>
 
             <Button 
-                onClick={handleLogin}
+                onClick={handleRegister}
                 className="w-full bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11">
-              Iniciar sesión
+              Registrarse
             </Button>
 
             <div className="relative flex items-center gap-3">
@@ -134,9 +152,9 @@ export default function LoginPage() {
             </Button>
 
             <p className="text-center text-sm text-gray-500 pt-2">
-              ¿No tenés una cuenta?{" "}
-              <Link href="/register" className="text-[#0F1E3C] font-medium hover:underline">
-                Crear cuenta
+              ¿Ya tenés una cuenta?{" "}
+              <Link href="/login" className="text-[#0F1E3C] font-medium hover:underline">
+                Iniciar sesión
               </Link>
             </p>
           </div>

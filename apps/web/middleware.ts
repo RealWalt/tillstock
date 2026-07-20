@@ -4,7 +4,10 @@ import { getSession } from "./lib/session";
 export async function middleware(request: NextRequest) {
     const session = await getSession(request)
 
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
+    const isAuthRoute = request.nextUrl.pathname.startsWith('/login')||
+                        request.nextUrl.pathname.startsWith('/register')
+
+
     const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard')
 
     if(isProtectedRoute && !session) {
@@ -19,5 +22,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*", "/login"],
+    matcher: ["/dashboard/:path*", "/login", "/register"],
 }
