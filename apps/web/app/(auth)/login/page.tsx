@@ -42,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-8">
+    <div className="bg-gray-50 flex items-center justify-center p-8">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl flex overflow-hidden">
         
         {/* Columna izquierda */}

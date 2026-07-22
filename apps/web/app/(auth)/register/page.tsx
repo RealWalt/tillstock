@@ -42,15 +42,15 @@ export default function RegisterPage() {
         return toast.error(firstError);
     }
     
-     await authClient.signUp.email({
+     const { error } = await authClient.signUp.email({
         name,
         email,
         password,
-        callbackURL: '/dashboard'
+        callbackURL: '/email-verified'
     });
 
-
-    router.push(`/dashboard`);
+    if(error) return toast.error(error.statusText)
+    router.push(`/check-email`);
   }
 
   return (
