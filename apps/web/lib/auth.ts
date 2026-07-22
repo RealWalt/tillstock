@@ -20,12 +20,19 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true,
+        sendResetPassword: async ({ user, url }) => {
+            await resend.emails.send({ 
+                from: 'Tillstock <onboarding@resend.dev>',
+                to: user.email,
+                subject: 'Resetear contraseña de Tillstock',
+                html: `<p>Hola ${user.name}! <a href="${url}">Hacé clic acá para resetear tu contraseña</a></p>`
+            })
+        }
     },
     emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
         sendVerificationEmail: async ({ user, url }) => {
-            
             await resend.emails.send({
                 from: 'Tillstock <onboarding@resend.dev>',
                 to: user.email,
