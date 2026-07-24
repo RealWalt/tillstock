@@ -1,14 +1,8 @@
-import { z } from "zod";
-import { publicProcedure, router } from ".";
+import { businessRouter } from "./business-router.ts";
+import { router } from "./init.ts";
 
 export const appRouter = router({
-    hello: publicProcedure
-    .input(z.object({
-        text: z.string()
-    }))
-    .query(({ input}) => {
-        return `Hola ${input.text}`
-    })
+    business: businessRouter
 })
 
 export type AppRouter = typeof appRouter

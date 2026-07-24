@@ -11,8 +11,8 @@ export async function middleware(request: NextRequest) {
                         request.nextUrl.pathname.startsWith('forgot-password') 
 
 
-    const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard')
-
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') ||                     
+                             request.nextUrl.pathname.startsWith('/onboarding')
     if(isProtectedRoute && !session) {
         return NextResponse.redirect(new URL('/login', request.url))
     }

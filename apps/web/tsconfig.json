@@ -9,7 +9,13 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    // Disabled to avoid a known TypeScript monorepo bug: without this,
+    // tRPC throws a "cannot be named without a reference" error when
+    // inferring types across packages, caused by how Bun resolves symlinks.
+    // See: https://discord-questions.trpc.io/m/1170736851775127564
+    "declaration": false,
+    "declarationMap": false
   },
   "include": [
     "**/*.ts",

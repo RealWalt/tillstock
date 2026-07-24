@@ -5,7 +5,8 @@
   "private": true,
   "exports": {
     ".": "./index.ts",
-    "./auth-schema": "./auth-schema.ts"
+    "./auth-schema": "./auth-schema.ts",
+    "./schema": "./schema.ts"
   },
   "scripts": {
     "db:push": "bunx drizzle-kit push",
@@ -23,6 +24,6 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "dotenv": "^17.4.2",
-    "drizzle-orm": "^1.0.0-rc.4"
+    "drizzle-orm": "1.0.0-rc.4"
   }
 }
