@@ -49,6 +49,7 @@ const navSections = [
 export default function DashboardLayout({ children }: {children: React.ReactNode}) {
     const pathname = usePathname()
 
+
     return (
         <SidebarProvider>
             <Sidebar collapsible="icon">
@@ -61,11 +62,12 @@ export default function DashboardLayout({ children }: {children: React.ReactNode
                             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
                             <SidebarGroupContent>{section.items.map((item) => {
                                 const Icon = item.icon
+                                const isActive = pathname === item.href
                                 return (
                                     <SidebarMenuItem key={item.href}>
-                                        <SidebarMenuButton isActive={pathname === item.href} render={<Link href={item.href} />}>
-                                            <Icon />
-                                            <span>{item.label}</span>
+                                        <SidebarMenuButton isActive={isActive} render={<Link href={item.href} />}>
+                                            <Icon className={isActive ? 'text-yellow-400 ' : ''} />
+                                            <span className={isActive ? 'text-yellow-400 ' : ''}>{item.label}</span>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 )

@@ -121,13 +121,12 @@ export const OnboardingWizard = () => {
         })
 
     }
+        return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-5xl flex flex-col md:flex-row overflow-hidden md:min-h-150">
 
-    return (
-        <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-5xl flex overflow-hidden min-h-150">
-
-                {/* Sidebar */}
-                <div className="w-72 bg-[#0F1E3C] p-8 flex flex-col shrink-0">
+                {/* Sidebar - oculto en mobile, barra de progreso simple en su lugar */}
+                <div className="hidden md:flex w-72 bg-[#0F1E3C] p-8 flex-col shrink-0">
                     <div className="flex flex-col items-center">
                         <Image src="/tillstock-logo-white.svg" alt="Tillstock" width={160} height={80} />
                         <p className="text-yellow-400 text-xs font-medium mt-6 mb-4 tracking-wide self-start">ONBOARDING</p>
@@ -154,16 +153,33 @@ export const OnboardingWizard = () => {
                     </div>
                 </div>
 
+                {/* Header móvil - solo visible en mobile */}
+                <div className="md:hidden bg-[#0F1E3C] px-5 py-5">
+                    <div className="flex items-center justify-between">
+                        <Image src="/tillstock-logo-white.svg" alt="Tillstock" width={110} height={50} />
+                        <span className="text-yellow-400 text-xs font-medium">Paso {step} de 5</span>
+                    </div>
+                    <p className="text-white text-sm font-medium mt-3">{steps[step - 1]?.title}</p>
+                    <div className="flex gap-1.5 mt-3">
+                        {steps.map((s) => (
+                            <div 
+                                key={s.id} 
+                                className={`h-1 flex-1 rounded-full ${s.id <= step ? 'bg-[#F5C518]' : 'bg-white/20'}`} 
+                            />
+                        ))}
+                    </div>
+                </div>
+
                 {/* Contenido dinámico */}
-                <div className="flex-1 p-10 overflow-y-auto">
-                    <p className="text-sm text-gray-400 text-right">Paso {step} de 5</p>
+                <div className="flex-1 p-5 sm:p-6 md:p-10 overflow-y-auto">
+                    <p className="hidden md:block text-sm text-gray-400 text-right">Paso {step} de 5</p>
 
                     {step === 1 && (
                         <div className="mt-2">
-                            <h2 className="text-2xl font-semibold text-gray-900">¡Bienvenido a Tillstock! 👋</h2>
-                            <p className="text-gray-500 mt-1">Vamos a configurar tu comercio en unos simples pasos.</p>
+                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">¡Bienvenido a Tillstock! 👋</h2>
+                            <p className="text-gray-500 mt-1 text-sm sm:text-base">Vamos a configurar tu comercio en unos simples pasos.</p>
 
-                            <div className="mt-8 space-y-5 max-w-md">
+                            <div className="mt-6 sm:mt-8 space-y-5 max-w-md">
                                 <div className="space-y-2">
                                     <Label>Nombre del comercio</Label>
                                     <Input
@@ -201,7 +217,7 @@ export const OnboardingWizard = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-8 max-w-md">
+                            <div className="mt-6 sm:mt-8 max-w-md">
                                 <Button
                                     className="w-full bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11"
                                     onClick={() => setStep(2)}
@@ -215,13 +231,13 @@ export const OnboardingWizard = () => {
 
                     { step === 2 && (
                         <div key='step-2' className="mt-2 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <h3 className="text-2xl flex items-center gap-x-2 font-semibold text-gray-900">
-                                <StoreIcon className="h-7 w-7 text-yellow-400"/>
+                            <h3 className="text-xl sm:text-2xl flex items-center gap-x-2 font-semibold text-gray-900">
+                                <StoreIcon className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-400"/>
                                 Tipo de Negocio
                             </h3>
-                            <p className="text-muted-foreground mt-1">Selecciona la mejor opción que describe tu actividad principal.</p>
+                            <p className="text-muted-foreground mt-1 text-sm sm:text-base">Selecciona la mejor opción que describe tu actividad principal.</p>
 
-                            <div className="mt-8 grid grid-cols-3 gap-4">
+                            <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 { businessTypes.map((type) => {
                                     const Icon = type.icon
                                     const isSelected = data.type === type.value
@@ -232,7 +248,7 @@ export const OnboardingWizard = () => {
                                             type="button"
                                             onClick={() => updateData({ type: type.value})}
                                             className={`relative text-left p-5 rounded-xl border-2 cursor-pointer transition-all
-                                                ${isSelected ? 'border-[#F5C518] bg-[#F5C518]/5' : 'border-gray-200 hover:border-gray-300 hover:scale-105'}`}
+                                                ${isSelected ? 'border-[#F5C518] bg-[#F5C518]/5' : 'border-gray-200 hover:border-gray-300 sm:hover:scale-105'}`}
                                         >
                                             <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
                                                 ${isSelected ? 'border-[#F5C518] bg-[#F5C518]' : 'border-gray-300'}`}>
@@ -272,7 +288,7 @@ export const OnboardingWizard = () => {
                             <div className="mt-8 flex items-center gap-3">
                                 <Button className='flex items-center gap-2' variant='outline' onClick={() => setStep(1)}>
                                     <ArrowLeft />
-                                    Volver
+                                    <span className="hidden sm:inline">Volver</span>
                                 </Button>
                                 <Button 
                                     className="flex-1 bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11"
@@ -288,15 +304,15 @@ export const OnboardingWizard = () => {
                     { step === 3 && (
                         <div key='step-3' className="mt-2 animate-in fade-in slide-in-from-right-4 duration-500">
 
-                            <div className="mt-4">
-                                <p className="text-xl flex items-center gap-2 font-semibold">
-                                    <CircleDollarSignIcon className="h-5  w-5" />
+                            <div className="mt-2 sm:mt-4">
+                                <p className="text-lg sm:text-xl flex items-center gap-2 font-semibold">
+                                    <CircleDollarSignIcon className="h-5 w-5" />
                                     Moneda principal
                                 </p>
                                 <span className="text-sm text-muted-foreground">Selecciona la moneda principal que usarás principalmente en tu negocio.</span>
                             </div>
 
-                            <div className="flex flex-col mt-2 gap-2">
+                            <div className="flex flex-col mt-4 gap-2">
                                     {currencyTypes.map((type) => {
                                         const isSelected = data.currency === type.value
 
@@ -305,8 +321,8 @@ export const OnboardingWizard = () => {
                                             key={type.value}
                                             type="button"
                                             onClick={() => updateData({ currency: type.value})}
-                                            className={`relative py-8 text-left p-5 rounded-xl border-2 cursor-pointer transition-all
-                                                ${isSelected ? 'border-[#F5C518] bg-[#F5C518]/5' : 'border-gray-200 hover:border-gray-300 hover:scale-105'}`}
+                                            className={`relative text-left p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all
+                                                ${isSelected ? 'border-[#F5C518] bg-[#F5C518]/5' : 'border-gray-200 hover:border-gray-300 sm:hover:scale-105'}`}
                                             >
                                             <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center
                                                 ${isSelected ? 'border-[#F5C518] bg-[#F5C518]' : 'border-gray-300'}`}>
@@ -316,7 +332,7 @@ export const OnboardingWizard = () => {
                                             <div className="flex items-center gap-2">
                                                 <span className={`${type.icon}`}></span>
                                                 <div>
-                                                    <p className="font-semibold">{type.label}</p> 
+                                                    <p className="font-semibold text-sm sm:text-base">{type.label}</p> 
                                                 </div>
                                             </div>
                                         </button>
@@ -334,7 +350,7 @@ export const OnboardingWizard = () => {
                             <div className="mt-8 flex items-center gap-3">
                                 <Button className='flex items-center gap-2' variant='outline' onClick={() => setStep(1)}>
                                     <ArrowLeft />
-                                    Volver
+                                    <span className="hidden sm:inline">Volver</span>
                                 </Button>
                                 <Button 
                                     className="flex-1 bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11"
@@ -349,20 +365,20 @@ export const OnboardingWizard = () => {
 
                     {step === 4 && (
                         <div key="step-4" className="mt-2 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h2 className="text-2xl font-semibold text-gray-900">Logo de tu negocio</h2>
-                            <p className="text-gray-500 mt-1">Podés agregarlo ahora o más tarde desde configuración.</p>
+                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Logo de tu negocio</h2>
+                            <p className="text-gray-500 mt-1 text-sm sm:text-base">Podés agregarlo ahora o más tarde desde configuración.</p>
 
-                            <div className="mt-8 max-w-md">
-                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center">
+                            <div className="mt-6 sm:mt-8 max-w-md">
+                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-10 text-center">
                                     <ImageIcon className="w-10 h-10 text-gray-300 mx-auto" />
                                     <p className="text-sm text-gray-500 mt-3">Esta función estará disponible próximamente</p>
                                     <p className="text-xs text-gray-400 mt-1">Podrás subir tu logo desde Configuración cuando la función este disponible</p>
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex gap-3">
+                            <div className="mt-6 sm:mt-8 flex gap-3">
                                 <Button variant="outline" onClick={() => setStep(3)}>
-                                    <ArrowLeft className="w-4 h-4" /> Volver
+                                    <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Volver</span>
                                 </Button>
                                 <Button 
                                     className="flex-1 bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11"
@@ -376,18 +392,18 @@ export const OnboardingWizard = () => {
 
                     {step === 5 && (
                         <div key="step-5" className="mt-2 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h2 className="text-2xl font-semibold text-gray-900">¡Todo listo! 🎉</h2>
-                            <p className="text-gray-500 mt-1">Revisá la información antes de crear tu comercio.</p>
+                            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">¡Todo listo! 🎉</h2>
+                            <p className="text-gray-500 mt-1 text-sm sm:text-base">Revisá la información antes de crear tu comercio.</p>
 
-                            <div className="mt-8 max-w-md bg-gray-50 rounded-xl p-5 space-y-3">
+                            <div className="mt-6 sm:mt-8 max-w-md bg-gray-50 rounded-xl p-4 sm:p-5 space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Nombre</span>
                                     <span className="font-medium text-gray-900">{data.name}</span>
                                 </div>
                                 {data.description && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Descripción</span>
-                                        <span className="font-medium text-gray-900 text-right max-w-50">{data.description}</span>
+                                    <div className="flex justify-between text-sm gap-2">
+                                        <span className="text-gray-500 shrink-0">Descripción</span>
+                                        <span className="font-medium text-gray-900 text-right">{data.description}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-sm">
@@ -404,9 +420,9 @@ export const OnboardingWizard = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex gap-3 max-w-md">
+                            <div className="mt-6 sm:mt-8 flex gap-3 max-w-md">
                                 <Button variant="outline" onClick={() => setStep(4)}>
-                                    <ArrowLeft className="w-4 h-4" /> Volver
+                                    <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Volver</span>
                                 </Button>
                                 <Button 
                                     className="flex-1 bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11"

@@ -53,7 +53,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="bg-gray-50 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl flex overflow-hidden">
         
         {/* Columna izquierda */}
@@ -79,7 +79,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Columna derecha */}
-        <div className="flex flex-col justify-center px-16 py-16 w-1/2 shrink-0 border-l border-gray-100">
+        <div className="flex flex-col justify-center px-6 py-10 sm:px-16 sm:py-16 w-full md:w-1/2 shrink-0 md:border-l border-gray-100">
           <h1 className="text-2xl font-semibold text-gray-900">Registrarse</h1>
           <p className="text-gray-500 text-sm mt-2">Ingresá tus credenciales para continuar</p>
 

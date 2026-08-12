@@ -11,7 +11,13 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     api.createClient({
       links: [
         httpBatchLink({
-          url: "http://localhost:3000/api/trpc",
+          url: "/api/trpc",
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: "include",
+            })
+          },
         }),
       ],
     })
