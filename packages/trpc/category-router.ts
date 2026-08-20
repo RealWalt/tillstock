@@ -49,6 +49,19 @@ export const categoryRouter = router({
 
             const typeFilter = type ? eq(categories.type, type) : undefined
 
+            const [business] = await db
+            .select()
+            .from(businesses)
+            .where(eq(businesses.ownerId, ctx.session.user.id))
+
+            if(!business) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No tienes ningun negocio creado'
+                })
+            }
+
+
             const baseWhere = and(
                 eq(categories.businessId, businesses.id),
                 eq(businesses.ownerId, ctx.session.user.id),

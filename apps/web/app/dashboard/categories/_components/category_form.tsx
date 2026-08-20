@@ -80,7 +80,7 @@ export const CreateCategoryForm = () => {
                 </DialogHeader>
 
                 <div className="space-y-4">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label htmlFor="name" className="text-sm font-medium leading-none">
                             Nombre
                         </Label>
@@ -92,7 +92,7 @@ export const CreateCategoryForm = () => {
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label htmlFor="description" className="text-sm font-medium leading-none">
                             Descripción (Opcional)
                         </Label>
@@ -104,7 +104,7 @@ export const CreateCategoryForm = () => {
                         />
                     </div>
                         
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label htmlFor="type" className="text-sm font-medium leading-none">
                             Tipo
                         </Label>
@@ -123,7 +123,7 @@ export const CreateCategoryForm = () => {
                         </Select>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label htmlFor="color" className="text-sm font-medium leading-none">
                             Color
                         </Label>

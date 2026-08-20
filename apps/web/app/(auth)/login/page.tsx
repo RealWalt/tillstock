@@ -13,8 +13,8 @@ import z from "zod"
 import { toast } from "sonner"
 
 const loginSchema = z.object({
-email: z.string().email('Email inválido'),
-password: z.string().min(1, 'La contraseña es requerida')
+  email: z.string().email('Email inválido'),
+  password: z.string().min(1, 'La contraseña es requerida')
 })
 
 export default function LoginPage() {
@@ -22,29 +22,31 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault() // evita que el form recargue la página
+
     const result = loginSchema.safeParse({ email, password })
 
-    if(!result.success) {
-        const firstError = result.error.issues[0]?.message
-        return toast.error(firstError);
+    if (!result.success) {
+      const firstError = result.error.issues[0]?.message
+      return toast.error(firstError);
     }
 
     const { error } = await authClient.signIn.email({
-        email,
-        password,
-        callbackURL: '/dashboard'
+      email,
+      password,
+      callbackURL: '/dashboard'
     })
 
-    if(error) {
-        return toast.error('Correo o contraseña incorrectos')
-    }  
+    if (error) {
+      return toast.error('Correo o contraseña incorrectos')
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl flex overflow-hidden">
-        
+
         {/* Columna izquierda */}
         <div className="hidden md:flex flex-col justify-center px-16 py-16 w-1/2 bg-gray-50 shrink-0">
           <Image src="./tillstock-logo_1.svg" alt="Tillstock" width={222} height={222} />
@@ -68,7 +70,10 @@ export default function LoginPage() {
         </div>
 
         {/* Columna derecha */}
-        <div className="flex flex-col justify-center px-6 py-10 sm:px-16 sm:py-16 w-full md:w-1/2 shrink-0 md:border-l border-gray-100">
+        <form
+          onSubmit={handleLogin}
+          className="flex flex-col justify-center px-6 py-10 sm:px-16 sm:py-16 w-full md:w-1/2 shrink-0 md:border-l border-gray-100"
+        >
           <h1 className="text-2xl font-semibold text-gray-900">Iniciar sesión</h1>
           <p className="text-gray-500 text-sm mt-2">Ingresá tus credenciales para continuar</p>
 
@@ -86,11 +91,11 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                    onChange={(e) => setPassword(e.target.value)}
-                    value={password}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-9 pr-9"
+                  onChange={(e) => setPassword(e.target.value)}
+                  value={password}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="pl-9 pr-9"
                 />
                 <button
                   type="button"
@@ -112,9 +117,9 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button 
-                onClick={handleLogin}
-                className="w-full bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11">
+            <Button
+              type="submit"
+              className="w-full bg-[#0F1E3C] hover:bg-[#1a2e55] text-white h-11">
               Iniciar sesión
             </Button>
 
@@ -125,6 +130,7 @@ export default function LoginPage() {
             </div>
 
             <Button
+              type="button"
               variant="outline"
               className="w-full h-11"
               onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/dashboard" })}
@@ -140,7 +146,7 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )

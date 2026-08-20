@@ -16,7 +16,7 @@ import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { api } from "@/lib/trpc";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { PAGE_SIZE } from "../constants";
+import { PAGE_SIZE } from "../../../../lib/constants";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

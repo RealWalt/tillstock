@@ -2,7 +2,7 @@ import { HydrateClient } from "@/lib/server";
 import { Suspense } from "react";
 import { CategoriesView } from "./_components/categories_view";
 import { trpc } from "@/lib/server"
-import { PAGE_SIZE } from "./constants"
+import { PAGE_SIZE } from "../../../lib/constants"
 
 type PageProps = {
     searchParams: Promise<{ page?: string; search?: string; type?: string }>

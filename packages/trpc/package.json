@@ -2,9 +2,9 @@
   "name": "@repo/trpc",
   "version": "0.0.1",
   "type": "module",
-  "main": "./index.ts",
+  "main": "./init.ts",
   "exports": {
-    ".": "./index.ts",
+    ".": "./init.ts",
     "./appRouter": "./appRouter.ts",
     "./init": "./init.ts"
   },

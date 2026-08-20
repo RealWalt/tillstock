@@ -30,3 +30,18 @@ import { user } from "./auth-schema";
       createdAt: timestamp('created_at').defaultNow().notNull(),
       updatedAt: timestamp('updated_at').defaultNow().notNull()
  })
+
+ export const suppliers = pgTable('suppliers', {
+   id: uuid().defaultRandom().primaryKey(),
+   name: text('name').notNull(),
+   contactName: text('contact_name'),
+   description: text('description'),
+   phone: text('phone'),
+   email: text('email'),
+   ruc: text('ruc'),
+   isActive: boolean('is_active').notNull().default(true),
+   businessId:uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+   createdAt: timestamp('created_at').defaultNow().notNull(),
+   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+
+ })
