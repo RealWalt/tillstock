@@ -1,5 +1,6 @@
 'use client';
 
+import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Clock, FileText, FolderTree, LayoutGrid, MonitorSmartphone, Package, Receipt, Settings, ShieldCheck, Store, Truck, UserCog, Users, WalletCards, Wrench } from "lucide-react";
 import Image from "next/image";
@@ -83,6 +84,7 @@ export default function DashboardLayout({ children }: {children: React.ReactNode
                 <SidebarInset>
                     <header className="flex items-center gap-2 p-4 border-b">
                         <SidebarTrigger />
+                        <DynamicBreadcrumb />
                     </header>
                     {children}
                 </SidebarInset>

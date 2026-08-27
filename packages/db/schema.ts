@@ -1,4 +1,4 @@
- import { boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+ import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
  export const businessTypeEnum = pgEnum('business_type', ['products', 'services', 'mixed'])
@@ -43,5 +43,22 @@ import { user } from "./auth-schema";
    businessId:uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
    createdAt: timestamp('created_at').defaultNow().notNull(),
    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+ })
 
+ export const products = pgTable('products', {
+  id: uuid().primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  sku: text('sku'),
+  barcode: text('bar_code'),
+  imageUrl: text('image_url'),
+  stock: integer('stock').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  salePrice: integer('sale_price').notNull(),
+  purchasePrice: integer('purchase_price').notNull(),
+  categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null'} ),
+  supplierId: uuid('supplier_id').references(() => suppliers.id, { onDelete: 'set null'}),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'cascade'}),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
  })
