@@ -2,8 +2,9 @@ import { z } from "zod";
 import { protectedProcedure, router } from "./init.ts";
 import { db } from "@repo/db";
 import { businesses, products } from "@repo/db/schema";
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { isAbortError } from "@trpc/server/unstable-core-do-not-import";
 
 export const productRouter = router({
     create: protectedProcedure
@@ -40,5 +41,88 @@ export const productRouter = router({
         }).returning()
 
         return product
+    }),
+
+    list: protectedProcedure
+    .input(z.object({
+        limit: z.number().default(10),
+        page: z.number().default(1),
+        search: z.string().optional(),
+        categoryId: z.string().optional(),
+        supplierId: z.string().optional()
+    }))
+    .query(async ({ ctx, input }) => {
+        const { limit, page, search, categoryId, supplierId } = input;
+
+        const searchFilter = search
+            ? ilike(products.name, `%${search}%`)
+            : undefined;
+
+        const categoryFilter = categoryId
+            ? eq(products.categoryId, categoryId)
+            : undefined;
+        
+        const supplieFilter = supplierId
+            ? eq(products.supplierId, supplierId)
+            : undefined;
+
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const baseWhere = and(
+            eq(products.businessId, businesses.id),
+            eq(businesses.ownerId, ctx.session.user.id),
+            searchFilter,
+            categoryFilter,
+            supplieFilter
+        )
+
+        const [totalResult] = await db
+        .select({
+            total: count()
+        })
+        .from(products)
+        .innerJoin(businesses, eq(businesses.id, products.businessId))  
+        .where(baseWhere)
+
+        const total = Number(totalResult?.total ?? 0);
+
+        const data = await db
+        .select({
+            id: products.id,
+            name: products.name,
+            description: products.description,
+            sku: products.sku,
+            barcode: products.barcode,
+            imageUrl: products.imageUrl,
+            stock: products.stock,
+            isActive: products.isActive,
+            salePrice: products.salePrice,
+            purchasePrice: products.purchasePrice,
+            categoryId: products.categoryId,
+            supplierId: products.supplierId
+        })
+        .from(products)
+        .innerJoin(businesses, eq(businesses.id, products.businessId))
+        .where(baseWhere)
+        .limit(limit)
+        .offset((page - 1) * limit)
+        .orderBy(desc(products.createdAt))
+
+        return {
+            items: data,
+            total,
+            totalPages: Math.ceil(total / limit),
+        }
+        
     })
 })

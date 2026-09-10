@@ -1,8 +1,11 @@
-import { HydrateClient } from "@/lib/server";
+import { HydrateClient, trpc } from "@/lib/server";
 import { Suspense } from "react";
 import { NewProductView } from "./_components/new_product_view";
 
-export default function Page () {
+export default async function Page () {
+    void trpc.supplier.list.prefetch({ page: 1, limit: 100, search: undefined, status: 'active' })
+    void trpc.category.list.prefetch({ page: 1, limit: 100, type: 'product'})
+
 
     return (
         <HydrateClient>
