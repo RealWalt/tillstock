@@ -3,8 +3,7 @@ import { protectedProcedure, router } from "./init.ts";
 import { db } from "@repo/db";
 import { businesses, products } from "@repo/db/schema";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
-import { isAbortError } from "@trpc/server/unstable-core-do-not-import";
+import { TRPCError } from "@trpc/server";   
 
 export const productRouter = router({
     create: protectedProcedure
@@ -32,11 +31,33 @@ export const productRouter = router({
                 message: 'No tienes ningun negocio creado'
             })
         }
+        let finalSku = input.sku;
+        if(!finalSku) {
+            const [total] = await db
+            .select({
+                total: count()
+            }).from(products)
+            .where(eq(products.businessId, business.id))
+
+            const totalResult = Number(total?.total ?? 0);
+
+            finalSku = String(totalResult + 1)
+        }
+
+        function generateBarcode() : string {
+            const timestamp = Date.now().toString().slice(-8)
+            const randomDigits = Math.floor(Math.random() * 900 + 100)
+            return `${timestamp +   4}${randomDigits}`
+        }
+
+        
 
         const [product] = await db
         .insert(products)
         .values({
             ...input,
+            barcode: input.barcode || generateBarcode(),
+            sku: finalSku,
             businessId: business.id
         }).returning()
 
@@ -79,7 +100,7 @@ export const productRouter = router({
         }
 
         const baseWhere = and(
-            eq(products.businessId, businesses.id),
+            eq(products.businessId, business.id),
             eq(businesses.ownerId, ctx.session.user.id),
             searchFilter,
             categoryFilter,
@@ -123,6 +144,88 @@ export const productRouter = router({
             total,
             totalPages: Math.ceil(total / limit),
         }
-        
+
+    }),
+
+    update: protectedProcedure
+    .input(z.object({
+        id: z.uuid(),
+        name: z.string().min(1, 'Nombre Invalido'),
+        description: z.string().optional(),
+        sku: z.string().optional(),
+        barcode: z.string().optional(),
+        imageUrl: z.string().optional(),
+        stock: z.number().min(0, 'El stock no puede ser negativo'),
+        salePrice: z.number().min(1, 'Precio de venta invalido'),
+        purchasePrice: z.number().min(1, 'Precio de compra'),
+        categoryId: z.uuid().optional(),
+        supplierId: z.uuid().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+        const { id, ...values } = input;
+
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [product] = await db
+        .update(products)
+        .set({ ...values, updatedAt: new Date() })
+        .where(and(
+            eq(products.id, id),
+            eq(products.businessId, business.id)
+        ))
+        .returning()
+
+        if(!product) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Producto no encontrado'
+            })
+        }
+
+        return product
+    }),
+
+    delete: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [product] = await db
+        .update(products)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(and(
+            eq(products.id, input.id),
+            eq(products.businessId, business.id)
+        ))
+        .returning()
+
+        if(!product) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Producto no encontrado'
+            })
+        }
+
+        return product
     })
 })

@@ -83,7 +83,7 @@ export const NewProductView = () => {
     const handleRemoveImage = () => {
         setImageUrl(undefined)
         setPreviewUrl(undefined)
-    }  
+     }
     
     const updateSearchParams = (updates: Record<string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -121,9 +121,15 @@ export const NewProductView = () => {
             setDescription('')
             setSalePrice('')
             setPurchasePrice('')
+            setSupplierId(null)
+            setCategoryId(null)
+            setSearchInput('')  
             setStock('')
             toast.success('Producto creado correctamente')
-            router.push('/dashboard/products')
+            const params = new URLSearchParams(searchParams.toString())
+            params.delete('search')
+            params.delete('page')
+            router.push(`${pathname}?${params.toString()}`)
         },
         onError: (error) => {
             toast.error('Error al crear el producto: ' + error.message)
@@ -136,9 +142,9 @@ export const NewProductView = () => {
             sku,
             barcode,
             description,
-            salePrice: salePrice ?? 0,
-            purchasePrice: purchasePrice ?? 0,
-            stock: stock ?? 0,
+            salePrice: Number(salePrice),
+            purchasePrice: Number(purchasePrice),
+            stock: Number(stock),
             supplierId: supplierId ?? undefined,
             categoryId: categoryId ?? undefined,
             imageUrl: imageUrl ?? undefined
@@ -198,7 +204,7 @@ export const NewProductView = () => {
                                 value={sku}
                                 onChange={(e) => setSku(e.target.value)}
                             />
-                            <p className="text-xs text-muted-foreground">Codigo unico para identificar al producto (Opcional)</p>
+                            <p className="text-xs text-muted-foreground">Codigo unico para identificar al producto (Dejar vacio para generar automaticamente)</p>
 
                         </div>
 

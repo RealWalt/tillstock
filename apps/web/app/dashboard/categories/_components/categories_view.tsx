@@ -8,8 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Folder, MoreVertical, Package, Pencil, Search, SearchX, SquareChartGantt, Wrench } from "lucide-react";
-import { CreateCategoryForm } from "./category_form";
+import { ChevronLeft, ChevronRight, Folder, MoreVertical, Package, Pencil, Search, SearchX, SquareChartGantt, Trash2, Wrench } from "lucide-react";
+import { CreateCategoryForm, EditCategoryForm } from "./category_form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -20,6 +20,9 @@ import { PAGE_SIZE } from "../../../../lib/constants";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const typesFilter = [
   { label: "Todas", value: "all" },
@@ -32,6 +35,14 @@ const typeIcons = {
   service: Wrench,
 }
 
+type CategoryRow = {
+  id: string
+  name: string
+  description: string | null
+  type: 'product' | 'service'
+  color: string
+  isActive: boolean
+}
 
 export const CategoriesView = () => {
   const router = useRouter();
@@ -43,6 +54,8 @@ export const CategoriesView = () => {
   const type = searchParams.get("type") ?? "all";
 
   const [searchInput, setSearchInput] = useState(search);
+  const [editing, setEditing] = useState<CategoryRow | null>(null);
+  const [deleting, setDeleting] = useState<CategoryRow | null>(null);
 
   const updateSearchParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -60,11 +73,24 @@ export const CategoriesView = () => {
     updateSearchParams({ search: value, page: "1", type: "all" });
   }, 400);
 
+  const utils = api.useUtils();
+
   const [data] = api.category.list.useSuspenseQuery({
     page,
     limit: PAGE_SIZE,
     search: search || undefined,
     type: type !== 'all' ? (type as 'product' | 'service') : undefined,
+  })
+
+  const deleteCategory = api.category.delete.useMutation({
+    onSuccess: () => {
+      setDeleting(null);
+      utils.category.list.invalidate();
+      toast.success('Categoría eliminada');
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
   })
 
   return (
@@ -91,9 +117,9 @@ export const CategoriesView = () => {
       <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl shadow-sm p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            placeholder="Buscar categorías..." 
-            className="pl-9" value={searchInput} 
+          <Input
+            placeholder="Buscar categorías..."
+            className="pl-9" value={searchInput}
             onChange={(e) => {
               setSearchInput(e.target.value)
               debouncedSearch(e.target.value)
@@ -114,7 +140,7 @@ export const CategoriesView = () => {
         </Select>
         <CreateCategoryForm />
       </div>
-      
+
       <div>
         <Table>
           <TableHeader>
@@ -139,8 +165,8 @@ export const CategoriesView = () => {
                         { search ? "No se encontraron resultados" : "No hay categorías aún" }
                       </EmptyTitle>
                       <EmptyDescription>
-                        { search 
-                        ? "Intenta con otra búsqueda" 
+                        { search
+                        ? "Intenta con otra búsqueda"
                         : "Crea tu primera categoría para organizar tus productos" }
                       </EmptyDescription>
                     </EmptyHeader>
@@ -151,10 +177,10 @@ export const CategoriesView = () => {
               data.items.map((category) => {
                 const Icon = typeIcons[category.type]
                 return (
-                  
+
                   <TableRow key={category.id} className="hover:bg-gray-50">
                   <TableCell className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="h-8 w-8 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: `${category.color}20` }}
                       >
@@ -172,15 +198,27 @@ export const CategoriesView = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="flex items-center gap-2">
-                    <Button variant='outline'>
+                    <Button variant='outline' size='icon' onClick={() => setEditing(category)}>
                       <Pencil />
                     </Button>
-                    <Button variant='outline'>
+                    <Button variant='outline' size='icon'>
                       <SquareChartGantt />
                     </Button>
-                    <Button variant='outline'>
-                      <MoreVertical />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={<Button variant='outline' size='icon' />}>
+                        <MoreVertical />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditing(category)}>
+                          <Pencil />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem variant="destructive" onClick={() => setDeleting(category)}>
+                          <Trash2 />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
                 )})
@@ -223,7 +261,34 @@ export const CategoriesView = () => {
           </Button>
         </div>
       </div>
+
+      <EditCategoryForm
+        category={editing}
+        open={!!editing}
+        onOpenChange={(open) => !open && setEditing(null)}
+      />
+
+      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar categoría?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La categoría <span className="font-medium">{deleting?.name}</span> se marcará como inactiva. Los productos asociados no se eliminarán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteCategory.isPending}
+              onClick={() => deleting && deleteCategory.mutate({ id: deleting.id })}
+            >
+              {deleteCategory.isPending ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-    
+
   );
 };

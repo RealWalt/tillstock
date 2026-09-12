@@ -63,7 +63,7 @@ export const categoryRouter = router({
 
 
             const baseWhere = and(
-                eq(categories.businessId, businesses.id),
+                eq(categories.businessId, business.id),
                 eq(businesses.ownerId, ctx.session.user.id),
                 searchFilter,
                 typeFilter
@@ -100,5 +100,81 @@ export const categoryRouter = router({
                 total,
                 totalPages: Math.ceil(total / limit)
             }
+        }),
+
+    update: protectedProcedure
+        .input(z.object({
+            id: z.uuid(),
+            name: z.string().min(1),
+            description: z.string().optional(),
+            type: z.enum(['product', 'service']),
+            color: z.string().optional()
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const { id, ...values } = input;
+
+            const [business] = await db
+            .select()
+            .from(businesses)
+            .where(eq(businesses.ownerId, ctx.session.user.id))
+
+            if(!business) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No tienes ningun negocio creado'
+                })
+            }
+
+            const [category] = await db
+            .update(categories)
+            .set({ ...values, updatedAt: new Date() })
+            .where(and(
+                eq(categories.id, id),
+                eq(categories.businessId, business.id)
+            ))
+            .returning();
+
+            if(!category) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Categoría no encontrada'
+                })
+            }
+
+            return category;
+        }),
+
+    delete: protectedProcedure
+        .input(z.object({ id: z.uuid() }))
+        .mutation(async ({ ctx, input }) => {
+            const [business] = await db
+            .select()
+            .from(businesses)
+            .where(eq(businesses.ownerId, ctx.session.user.id))
+
+            if(!business) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'No tienes ningun negocio creado'
+                })
+            }
+
+            const [category] = await db
+            .update(categories)
+            .set({ isActive: false, updatedAt: new Date() })
+            .where(and(
+                eq(categories.id, input.id),
+                eq(categories.businessId, business.id)
+            ))
+            .returning();
+
+            if(!category) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Categoría no encontrada'
+                })
+            }
+
+            return category;
         })
 })

@@ -19,9 +19,16 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file}) => {
       console.log(`Imagen subida por: ${metadata.userId} `)
       return { url: file.ufsUrl}
-    })
+    }),
     // Set permissions and file types for this FileRoute
-  
+
+  businessLogo: f({ image: { maxFileSize: '2MB', maxFileCount: 1 } })
+    .middleware(authMiddleware)
+    .onUploadComplete(async ({ metadata, file}) => {
+      console.log(`Logo subido por: ${metadata.userId} `)
+      return { url: file.ufsUrl}
+    }),
+
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

@@ -107,5 +107,83 @@ export const suppliersRouter = router({
                 total,
                 totalPages: Math.ceil(total / limit)
             }
+    }),
+
+    update: protectedProcedure
+    .input(z.object({
+        id: z.uuid(),
+        name: z.string().min(1, 'El nombre es obligatorio'),
+        contactName: z.string().optional(),
+        description: z.string().optional(),
+        phone: z.string(),
+        email: z.string().optional(),
+        ruc: z.string().optional()
+    }))
+    .mutation(async ({ input, ctx }) => {
+        const { id, ...values } = input;
+
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [supplier] = await db
+        .update(suppliers)
+        .set({ ...values, updatedAt: new Date() })
+        .where(and(
+            eq(suppliers.id, id),
+            eq(suppliers.businessId, business.id)
+        ))
+        .returning();
+
+        if(!supplier) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Proveedor no encontrado'
+            })
+        }
+
+        return supplier;
+    }),
+
+    delete: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ input, ctx }) => {
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [supplier] = await db
+        .update(suppliers)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(and(
+            eq(suppliers.id, input.id),
+            eq(suppliers.businessId, business.id)
+        ))
+        .returning();
+
+        if(!supplier) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Proveedor no encontrado'
+            })
+        }
+
+        return supplier;
     })
 })

@@ -62,3 +62,17 @@ import { user } from "./auth-schema";
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
  })
+
+ export const services = pgTable('services', {
+  id: uuid().primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  price: integer('price').notNull(),
+  duration: integer('duration').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null'} ),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'cascade'}),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+ })
