@@ -9,6 +9,7 @@ export default async function Page ({ params } : PageProps) {
     const { id } = await params
 
     void trpc.services.getById.prefetch({ id })
+    void trpc.category.list.prefetch({ page: 1, limit: 100, type: 'service' })
 
     return (
         <HydrateClient>

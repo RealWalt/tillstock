@@ -1,5 +1,6 @@
 'use client'
 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -12,8 +13,18 @@ import { api } from "@/lib/trpc"
 import { ChevronLeft, ChevronRight, MoreVertical, Pencil, Search, SearchX, Trash2, Wrench } from "lucide-react"
 import {  usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { toast } from "sonner"
 import { useDebouncedCallback } from "use-debounce"
 
+type ServiceRow = {
+    id: string
+    name: string
+    description: string | null
+    duration: number
+    categoryId: string | null
+    price: number
+    imageUrl: string | null
+}
 
 
 export const ServicesView = () => {
@@ -26,7 +37,7 @@ export const ServicesView = () => {
     const categoryId = searchParams.get('categoryId') ?? 'all'
 
     const [searchInput, setSearchInput] = useState(search)
-
+    const [deleting, setDeleting] = useState<ServiceRow | null>(null)
     const updateSearchParams = (updates: Record <string, string | null>) => {
         const params = new URLSearchParams(searchParams.toString())
         Object.entries(updates).forEach(([key, value]) => {
@@ -43,11 +54,23 @@ export const ServicesView = () => {
         updateSearchParams({ search: value, page: '1'})
     }, 250)
 
+    const utils = api.useUtils()
     const [data] = api.services.list.useSuspenseQuery({
         page,
         limit: PAGE_SIZE,
         search: search || undefined,
         categoryId: categoryId !== 'all' ? categoryId : undefined
+    })
+
+    const {mutate: deleteService, isPending: isDeleting} = api.services.delete.useMutation({
+        onSuccess: () => {
+            utils.services.list.invalidate()
+            setDeleting(null)
+            toast.success('Servicio inhabilitado exitosamente')
+        },
+        onError: (error) => {
+            toast.error('Hubo un error al eliminar el servicio: ' + error.message)
+        }
     })
 
     
@@ -172,7 +195,7 @@ export const ServicesView = () => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="flex items-center gap-2">
-                                            <Button variant='outline' size='icon' onClick={() => {}}>
+                                            <Button variant='outline' size='icon' onClick={() => {router.push(`/dashboard/services/${service.id}/edit`)}}>
                                                 <Pencil />
                                             </Button>
                                             <DropdownMenu>
@@ -184,7 +207,7 @@ export const ServicesView = () => {
                                                         <Pencil />
                                                         Editar
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem variant="destructive" onClick={() => {}}>
+                                                    <DropdownMenuItem variant="destructive" onClick={() => {setDeleting(service)}}>
                                                         <Trash2 />
                                                         Eliminar
                                                     </DropdownMenuItem>
@@ -233,6 +256,27 @@ export const ServicesView = () => {
                     </Button>
                 </div>
             </div>
+
+            <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar servicio?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            El servicio <span className="font-medium">{deleting?.name}</span> se marcará como inactivo y dejará de aparecer en el punto de venta.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                        variant="destructive"
+                        disabled={isDeleting}
+                        onClick={() => deleting && deleteService({ id: deleting.id })}
+                    >
+                        {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

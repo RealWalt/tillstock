@@ -145,6 +145,7 @@ export const servicesRouter = router({
         duration: z.number().min(1, 'El servicio debe durar al menos un minuto'),
         price: z.number().min(1, 'Precio invalido'),
         categoryId: z.uuid().optional(),
+        isActive: z.boolean().default(true),
         imageUrl: z.string().optional()
     }))
     .mutation(async ({ ctx, input }) => {

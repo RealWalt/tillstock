@@ -1,9 +1,11 @@
 'use client'
 
+import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/trpc"
 import { useUploadThing } from "@/lib/uploadthing"
@@ -21,7 +23,8 @@ const serviceSchema = z.object({
     duration: z.number().min(1, 'La duración debe ser de al menos 1 minuto'),
     price: z.number().min(1, 'Pon un monto válido'),
     categoryId: z.string().optional(),
-    imageUrl: z.string().optional()
+    imageUrl: z.string().optional(),
+    isActive: z.boolean().default(true)
 })
 
 export type ServiceFormData = {
@@ -31,6 +34,7 @@ export type ServiceFormData = {
     duration: number
     categoryId: string | null
     price: number
+    isActive: boolean
     imageUrl: string | null
 }
 
@@ -53,6 +57,7 @@ export const ServiceFormView = ({ mode, service}: ServiceFromViewProps) => {
     const [description, setDescription] = useState(service?.description ?? '')
     const [duration, setDuration] = useState(service?.duration ?? '')
     const [price, setPrice] = useState(service?.price ?? '')
+    const [isActive, setIsActive] = useState(service?.isActive ?? true)
     
     const [categoryId, setCategoryId] = useState<string | null>(service?.categoryId ?? null)
 
@@ -123,6 +128,7 @@ export const ServiceFormView = ({ mode, service}: ServiceFromViewProps) => {
             price: Number(price) || 0,
             imageUrl: imageUrl ?? undefined,
             categoryId: categoryId ?? undefined,
+            isActive
         })
 
         if (!result.success) {
@@ -228,16 +234,30 @@ export const ServiceFormView = ({ mode, service}: ServiceFromViewProps) => {
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <Label>Costo del servicio <span className="text-red-600 font-bold">*</span></Label>
-                        <Input
-                            type="number"
-                            placeholder="Ej: 30000"
-                            className="w-44"
-                            value={price}
-                            min={1}
-                            onChange={(e) => setPrice(e.target.value)}
-                        />
+                    <div className="flex gap-5 ">
+                        <div className="space-y-3">
+                            <Label>Costo del servicio <span className="text-red-600 font-bold">*</span></Label>
+                            <Input
+                                type="number"
+                                placeholder="Ej: 30000"
+                                className="w-44"
+                                value={price}
+                                min={1}
+                                onChange={(e) => setPrice(e.target.value)}
+                            />
+                        </div>
+
+                        { mode === 'edit' && (
+                            <div className="flex items-center justify-between border border-gray-200 rounded-lg p-4">
+                                <div>
+                                    <Label className="text-sm font-medium">Servicio activo</Label>
+                                    <p className="text-xs text-muted-foreground">
+                                    Los servicios inactivos no aparecen en el POS ni en las ventas
+                                    </p>
+                                </div>
+                                <Switch checked={isActive} onCheckedChange={setIsActive} />
+                            </div>
+                        )}
                     </div>
                 </div>
 
