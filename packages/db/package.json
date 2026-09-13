@@ -6,6 +6,8 @@
   "exports": {
     ".": "./index.ts",
     "./auth-schema": "./auth-schema.ts",
+    "./permissions": "./permissions.ts",
+    "./default_roles": "./default_roles.ts",
     "./schema": "./schema.ts"
   },
   "scripts": {

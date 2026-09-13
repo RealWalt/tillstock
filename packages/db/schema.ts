@@ -76,3 +76,14 @@ import { user } from "./auth-schema";
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
  })
+
+ export const roles = pgTable('roles', {
+  id: uuid().defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  permissions: text('permissions').array().notNull().default([]),
+  isActive: boolean('is_active').default(true).notNull(),
+  businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+ })
