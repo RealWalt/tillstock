@@ -29,6 +29,13 @@ export const ourFileRouter = {
       return { url: file.ufsUrl}
     }),
 
+    serviceImage: f({image: { maxFileSize: '8MB', maxFileCount: 1}})
+    .middleware(authMiddleware)
+    .onUploadComplete(async({ metadata, file}) => {
+      console.log(`Logo subido por: ${metadata.userId} `)
+      return { url: file.ufsUrl}
+    })
+
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

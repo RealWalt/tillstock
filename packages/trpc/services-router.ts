@@ -1,11 +1,44 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./init.ts";
 import { db } from "@repo/db";
-import { businesses, services } from "@repo/db/schema";
+import { businesses, products, services } from "@repo/db/schema";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-export const servicesRoute = router({
+export const servicesRouter = router({
+    getById: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [service] = await db
+        .select()
+        .from(services)
+        .where(and(
+            eq(services.id, input.id),
+            eq(services.businessId, business.id)
+        ))
+
+        if(!service) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Servicio no encontrado'
+            })
+        }
+
+        return service
+    }),
+
     create: protectedProcedure
     .input(z.object({
         name: z.string().min(1, 'Nombre Invalido'),
@@ -102,6 +135,85 @@ export const servicesRoute = router({
             total,
             totalPages: Math.ceil(total / limit)
         }
-        
+    }),
+
+    update: protectedProcedure
+    .input(z.object({
+        id: z.uuid(),
+        name: z.string().min(1, 'Nombre Invalido'),
+        description: z.string().optional(),
+        duration: z.number().min(1, 'El servicio debe durar al menos un minuto'),
+        price: z.number().min(1, 'Precio invalido'),
+        categoryId: z.uuid().optional(),
+        imageUrl: z.string().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+        const { id, ...values} = input
+
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [service] = await db
+        .update(services)
+        .set({ ...values, updatedAt: new Date()})
+        .where(and(
+            eq(services.id, id),
+            eq(services.businessId, business.id)
+        ))
+        .returning()
+
+        if(!service) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Servicio no encontrado'
+            })
+        }
+
+        return service
+    }),
+
+    delete: protectedProcedure
+    .input(z.object({
+        id: z.uuid()
+    }))
+    .mutation(async ({ ctx, input }) => {
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [service] = await db
+        .update(services)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(and(
+            eq(services.id, input.id),
+            eq(services.businessId, business.id)
+        ))
+        .returning()
+
+        if(!service) {
+            throw new TRPCError({ 
+                code: 'NOT_FOUND',
+                message: 'Servicio no encontrado'
+            })
+        }
+
+        return service
     })
 })

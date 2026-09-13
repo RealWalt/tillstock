@@ -12,11 +12,14 @@ const labelMap: Record<string, string> = {
   suppliers: "Proveedores",
   services: "Servicios",
   new: "Crear nuevo",
+  edit: "Editar producto",
 }
+
+const isDynamicId = (segment: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
 
 export const DynamicBreadcrumb = () => {
     const pathname = usePathname()
-    const segments = pathname.split('/').filter(Boolean) // ["dashboard", "products", "new"]
+    const segments = pathname.split('/').filter((segment) => segment && !isDynamicId(segment)) // ["dashboard", "products", "new"]
 
     return (
         <Breadcrumb>
@@ -34,7 +37,7 @@ export const DynamicBreadcrumb = () => {
                             <BreadcrumbPage>{label}</BreadcrumbPage>
 
                         ) : (
-                            <BreadcrumbLink render={<Link href={href} />}>{label}</BreadcrumbLink>
+                            <BreadcrumbLink className="bg-blue-100 p-1.5 rounded-md text-blue-600" render={<Link href={href} />}>{label}</BreadcrumbLink>
                         )}
                         </BreadcrumbItem>
                         {!isLast && <BreadcrumbSeparator />}

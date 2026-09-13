@@ -15,7 +15,6 @@ import { useDebouncedCallback } from "use-debounce"
 import { api } from "@/lib/trpc"
 import { PAGE_SIZE } from "@/lib/constants"
 import { toast } from "sonner"
-import { EditProductForm } from "./product_form"
 
 type ProductRow = {
     id: string
@@ -48,7 +47,6 @@ export const ProductsView = () => {
     const supplierId = searchParams.get('supplierId') ?? 'all'
 
     const [searchInput, setSearchInput] = useState(search)
-    const [editing, setEditing] = useState<ProductRow | null>(null)
     const [deleting, setDeleting] = useState<ProductRow | null>(null)
 
     const updateSearchParams = (updates: Record<string, string | null>) => {
@@ -232,7 +230,7 @@ export const ProductsView = () => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="flex items-center gap-2">
-                                            <Button variant='outline' size='icon' onClick={() => setEditing(product)}>
+                                            <Button variant='outline' size='icon' onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}>
                                                 <Pencil />
                                             </Button>
                                             <DropdownMenu>
@@ -240,7 +238,7 @@ export const ProductsView = () => {
                                                     <MoreVertical />
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setEditing(product)}>
+                                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}>
                                                         <Pencil />
                                                         Editar
                                                     </DropdownMenuItem>
@@ -293,14 +291,6 @@ export const ProductsView = () => {
                     </Button>
                 </div>
             </div>
-
-            <EditProductForm
-                product={editing}
-                open={!!editing}
-                onOpenChange={(open) => !open && setEditing(null)}
-                categoryOptions={categoryOptions}
-                supplierOptions={supplierOptions}
-            />
 
             <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
                 <AlertDialogContent>

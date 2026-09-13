@@ -6,6 +6,39 @@ import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";   
 
 export const productRouter = router({
+    getById: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+        const [business] = await db
+        .select()
+        .from(businesses)
+        .where(eq(businesses.ownerId, ctx.session.user.id))
+
+        if(!business) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No tienes ningun negocio creado'
+            })
+        }
+
+        const [product] = await db
+        .select()
+        .from(products)
+        .where(and(
+            eq(products.id, input.id),
+            eq(products.businessId, business.id)
+        ))
+
+        if(!product) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Producto no encontrado'
+            })
+        }
+
+        return product
+    }),
+
     create: protectedProcedure
     .input(z.object({
         name: z.string().min(1, 'Nombre Invalido'),
