@@ -3,9 +3,9 @@ import { redirect } from "next/navigation"
 
 export default async function Page () {
     
-    const business = await trpc.business.getMine()
+    const membership = await trpc.businessMembers.getMyMembership(  )
 
-    if(!business) {
+    if(!membership) {
         redirect('/onboarding')
     }
 

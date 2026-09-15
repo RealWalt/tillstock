@@ -3,23 +3,19 @@ import { protectedProcedure, router } from "./init.ts";
 import { db } from "@repo/db";
 import { businesses, products } from "@repo/db/schema";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";   
+import { TRPCError } from "@trpc/server";
+import { getUserBusiness } from "./get-user-business.ts";
+import { requirePermission } from "./require-permission.ts";
 
 export const productRouter = router({
     getById: protectedProcedure
     .input(z.object({ id: z.uuid() }))
     .query(async ({ ctx, input }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
+        const result = await getUserBusiness(ctx.session.user.id)
+        if (!result) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
         }
+        const { business } = result
 
         const [product] = await db
         .select()
@@ -39,7 +35,7 @@ export const productRouter = router({
         return product
     }),
 
-    create: protectedProcedure
+    create: requirePermission('create_products')
     .input(z.object({
         name: z.string().min(1, 'Nombre Invalido'),
         description: z.string().optional(),
@@ -53,24 +49,13 @@ export const productRouter = router({
         supplierId: z.uuid().optional()
     }))
     .mutation(async ({ ctx, input }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
         let finalSku = input.sku;
         if(!finalSku) {
             const [total] = await db
             .select({
                 total: count()
             }).from(products)
-            .where(eq(products.businessId, business.id))
+            .where(eq(products.businessId, ctx.business.id))
 
             const totalResult = Number(total?.total ?? 0);
 
@@ -83,7 +68,7 @@ export const productRouter = router({
             return `${timestamp +   4}${randomDigits}`
         }
 
-        
+
 
         const [product] = await db
         .insert(products)
@@ -91,7 +76,7 @@ export const productRouter = router({
             ...input,
             barcode: input.barcode || generateBarcode(),
             sku: finalSku,
-            businessId: business.id
+            businessId: ctx.business.id
         }).returning()
 
         return product
@@ -120,21 +105,14 @@ export const productRouter = router({
             ? eq(products.supplierId, supplierId)
             : undefined;
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
+        const result = await getUserBusiness(ctx.session.user.id)
+        if (!result) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
         }
+        const { business } = result
 
         const baseWhere = and(
             eq(products.businessId, business.id),
-            eq(businesses.ownerId, ctx.session.user.id),
             searchFilter,
             categoryFilter,
             supplieFilter
@@ -180,7 +158,7 @@ export const productRouter = router({
 
     }),
 
-    update: protectedProcedure
+    update: requirePermission('edit_products')
     .input(z.object({
         id: z.uuid(),
         name: z.string().min(1, 'Nombre Invalido'),
@@ -197,24 +175,12 @@ export const productRouter = router({
     .mutation(async ({ ctx, input }) => {
         const { id, ...values } = input;
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [product] = await db
         .update(products)
         .set({ ...values, updatedAt: new Date() })
         .where(and(
             eq(products.id, id),
-            eq(products.businessId, business.id)
+            eq(products.businessId, ctx.business.id)
         ))
         .returning()
 
@@ -228,27 +194,15 @@ export const productRouter = router({
         return product
     }),
 
-    delete: protectedProcedure
+    delete: requirePermission('delete_products')
     .input(z.object({ id: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [product] = await db
         .update(products)
         .set({ isActive: false, updatedAt: new Date() })
         .where(and(
             eq(products.id, input.id),
-            eq(products.businessId, business.id)
+            eq(products.businessId, ctx.business.id)
         ))
         .returning()
 

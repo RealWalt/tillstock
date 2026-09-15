@@ -4,9 +4,11 @@ import { db } from "@repo/db";
 import { businesses, suppliers } from "@repo/db/schema";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { getUserBusiness } from "./get-user-business.ts";
+import { requirePermission } from "./require-permission.ts";
 
 export const suppliersRouter = router({
-    create: protectedProcedure
+    create: requirePermission('create_suppliers')
     .input(z.object({
         name: z.string().min(1, 'El nombre es obligatorio'),
         contactName: z.string().optional(),
@@ -16,22 +18,10 @@ export const suppliersRouter = router({
         ruc: z.string().optional()
     }))
     .mutation(async ({ input, ctx }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [supplier] = await db
         .insert(suppliers).values({
             ...input,
-            businessId: business.id
+            businessId: ctx.business.id
         }).returning();
 
         return supplier;
@@ -56,21 +46,14 @@ export const suppliersRouter = router({
             status === 'inactive' ? eq(suppliers.isActive, false) :
             undefined 
 
-            const [business] = await db
-            .select()
-            .from(businesses)
-            .where(eq(businesses.ownerId, ctx.session.user.id))
-
-            if(!business) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'No tienes ningun negocio creado'
-                })
+            const result = await getUserBusiness(ctx.session.user.id)
+            if (!result) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
             }
+            const { business } = result
 
             const baseWhere = and(
                 eq(suppliers.businessId, business.id),
-                eq(businesses.ownerId, ctx.session.user.id),
                 searchFilter,
                 statusFilter
             )
@@ -109,7 +92,7 @@ export const suppliersRouter = router({
             }
     }),
 
-    update: protectedProcedure
+    update: requirePermission('edit_suppliers')
     .input(z.object({
         id: z.uuid(),
         name: z.string().min(1, 'El nombre es obligatorio'),
@@ -122,24 +105,12 @@ export const suppliersRouter = router({
     .mutation(async ({ input, ctx }) => {
         const { id, ...values } = input;
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [supplier] = await db
         .update(suppliers)
         .set({ ...values, updatedAt: new Date() })
         .where(and(
             eq(suppliers.id, id),
-            eq(suppliers.businessId, business.id)
+            eq(suppliers.businessId, ctx.business.id)
         ))
         .returning();
 
@@ -153,27 +124,15 @@ export const suppliersRouter = router({
         return supplier;
     }),
 
-    delete: protectedProcedure
+    delete: requirePermission('delete_suppliers')
     .input(z.object({ id: z.uuid() }))
     .mutation(async ({ input, ctx }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [supplier] = await db
         .update(suppliers)
         .set({ isActive: false, updatedAt: new Date() })
         .where(and(
             eq(suppliers.id, input.id),
-            eq(suppliers.businessId, business.id)
+            eq(suppliers.businessId, ctx.business.id)
         ))
         .returning();
 

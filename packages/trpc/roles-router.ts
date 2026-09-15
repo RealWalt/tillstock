@@ -6,6 +6,8 @@ import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { DEFAULT_ROLES } from "@repo/db/default_roles";
 import { z } from "zod";
+import { getUserBusiness } from "./get-user-business.ts";
+import { requirePermission } from "./require-permission.ts";
 
 export const rolesRouter = router({
     getAvailablePermissions: protectedProcedure
@@ -13,22 +15,13 @@ export const rolesRouter = router({
         return AVAILABLE_PERMISSIONS
     }),
 
-    seedDefaults: protectedProcedure
+    seedDefaults: requirePermission('manage_roles')
     .mutation(async ({ ctx }) => {
-      const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-      if (!business) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No tienes ningún negocio creado' })
-      }
-
       const [existing] = await db
       .select({ total: count()})
       .from(roles)
-      .where(eq(roles.businessId, business.id))
-      
+      .where(eq(roles.businessId, ctx.business.id))
+
       if((existing?.total ?? 0) > 0) {
         return { seeded: false, message: 'Ya existen roles para este negocio'}
       }
@@ -36,38 +29,29 @@ export const rolesRouter = router({
       const inserted = await db.insert(roles).values(
         DEFAULT_ROLES.map((role) => ({
             ...role,
-            businessId: business.id
+            businessId: ctx.business.id
         }))
       ).returning()
 
       return { seeded: true, roles: inserted}
     }),
 
-    create: protectedProcedure
+    create: requirePermission('manage_roles')
     .input(z.object({
         name: z.string().min(1, 'El nombre es obligatorio'),
         description: z.string().optional(),
         permissions: z.array(z.string()).default([]),
     }))
     .mutation(async ({ ctx, input }) => {
-        const [business] = await db
-            .select()
-            .from(businesses)
-            .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if (!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tienes ningún negocio creado' })
-        }
-
         const [role] = await db.insert(roles).values({
             ...input,
-            businessId: business.id
+            businessId: ctx.business.id
         }).returning()
 
         return role
     }),
 
-    update: protectedProcedure
+    update: requirePermission('manage_roles')
     .input(z.object({
         id: z.uuid(),
         name: z.string().min(1, 'El nombre es obligatorio').optional(),
@@ -77,21 +61,12 @@ export const rolesRouter = router({
     .mutation(async ({ ctx, input }) => {
         const { id, ...values } = input;
 
-        const [business] = await db
-            .select()
-            .from(businesses)
-            .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if (!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tienes ningún negocio creado' })
-        }
-
         const [role] = await db
             .update(roles)
             .set({ ...values, updatedAt: new Date() })
             .where(and(
                 eq(roles.id, id),
-                eq(roles.businessId, business.id)
+                eq(roles.businessId, ctx.business.id)
             ))
             .returning();
 
@@ -113,18 +88,14 @@ export const rolesRouter = router({
 
         const searchFilter = search ? ilike(roles.name, `%${search}%`) : undefined;
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if (!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tienes ningún negocio creado' })
+        const result = await getUserBusiness(ctx.session.user.id)
+        if (!result) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
         }
+        const { business } = result
 
         const baseWhere = and(
             eq(roles.businessId, business.id),
-            eq(businesses.ownerId, ctx.session.user.id),
             searchFilter,
         )
         

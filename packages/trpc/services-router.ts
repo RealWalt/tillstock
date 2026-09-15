@@ -4,22 +4,18 @@ import { db } from "@repo/db";
 import { businesses, products, services } from "@repo/db/schema";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { getUserBusiness } from "./get-user-business.ts";
+import { requirePermission } from "./require-permission.ts";
 
 export const servicesRouter = router({
     getById: protectedProcedure
     .input(z.object({ id: z.uuid() }))
     .query(async ({ ctx, input }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
+        const result = await getUserBusiness(ctx.session.user.id)
+        if (!result) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
         }
+        const { business } = result
 
         const [service] = await db
         .select()
@@ -39,7 +35,7 @@ export const servicesRouter = router({
         return service
     }),
 
-    create: protectedProcedure
+    create: requirePermission('create_services')
     .input(z.object({
         name: z.string().min(1, 'Nombre Invalido'),
         description: z.string().optional(),
@@ -48,20 +44,11 @@ export const servicesRouter = router({
         categoryId: z.string().optional(),
         imageUrl: z.string().optional(),
     })).mutation(async ({ ctx, input}) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No se encontro el negocio' })
-        }
-
         const [service] = await db
         .insert(services)
         .values({
             ...input,
-            businessId: business.id,
+            businessId: ctx.business.id,
         }).returning()
 
         return service;
@@ -85,18 +72,14 @@ export const servicesRouter = router({
         ? eq(services.categoryId, categoryId)
         : undefined
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'No se encontro el negocio' })
+        const result = await getUserBusiness(ctx.session.user.id)
+        if (!result) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'No tenés acceso a ningún negocio' })
         }
+        const { business } = result
 
         const baseWhere = and(
             eq(services.businessId, business.id),
-            eq(businesses.ownerId, ctx.session.user.id),
             categoryFilter,
             searchFilter
         )
@@ -137,7 +120,7 @@ export const servicesRouter = router({
         }
     }),
 
-    update: protectedProcedure
+    update: requirePermission('edit_services')
     .input(z.object({
         id: z.uuid(),
         name: z.string().min(1, 'Nombre Invalido'),
@@ -151,24 +134,12 @@ export const servicesRouter = router({
     .mutation(async ({ ctx, input }) => {
         const { id, ...values} = input
 
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [service] = await db
         .update(services)
         .set({ ...values, updatedAt: new Date()})
         .where(and(
             eq(services.id, id),
-            eq(services.businessId, business.id)
+            eq(services.businessId, ctx.business.id)
         ))
         .returning()
 
@@ -182,34 +153,22 @@ export const servicesRouter = router({
         return service
     }),
 
-    delete: protectedProcedure
+    delete: requirePermission('delete_services')
     .input(z.object({
         id: z.uuid()
     }))
     .mutation(async ({ ctx, input }) => {
-        const [business] = await db
-        .select()
-        .from(businesses)
-        .where(eq(businesses.ownerId, ctx.session.user.id))
-
-        if(!business) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No tienes ningun negocio creado'
-            })
-        }
-
         const [service] = await db
         .update(services)
         .set({ isActive: false, updatedAt: new Date() })
         .where(and(
             eq(services.id, input.id),
-            eq(services.businessId, business.id)
+            eq(services.businessId, ctx.business.id)
         ))
         .returning()
 
         if(!service) {
-            throw new TRPCError({ 
+            throw new TRPCError({
                 code: 'NOT_FOUND',
                 message: 'Servicio no encontrado'
             })

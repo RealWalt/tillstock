@@ -34,6 +34,13 @@ export const ourFileRouter = {
     .onUploadComplete(async({ metadata, file}) => {
       console.log(`Logo subido por: ${metadata.userId} `)
       return { url: file.ufsUrl}
+    }),
+
+    employeeImage: f({ image: { maxFileSize: '4MB', maxFileCount: 1 } })
+    .middleware(authMiddleware)
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log(`Imagen subida por: ${metadata.userId} `)
+      return { url: file.ufsUrl }
     })
 
 } satisfies FileRouter;

@@ -1,4 +1,4 @@
-import { businessRouter } from "./business-router.ts";
+import { businessMembersRouter, businessRouter } from "./business-router.ts";
 import { categoryRouter } from "./category-router.ts";
 import { router } from "./init.ts";
 import { productRouter } from "./product-router.ts";
@@ -12,7 +12,8 @@ export const appRouter = router({
     supplier: suppliersRouter,
     product: productRouter,
     services: servicesRouter,
-    roles: rolesRouter
+    roles: rolesRouter,
+    businessMembers: businessMembersRouter
 })
 
 export type AppRouter = typeof appRouter
