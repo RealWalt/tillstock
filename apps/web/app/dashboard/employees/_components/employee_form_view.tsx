@@ -23,20 +23,19 @@ const employeeSchema = z.object({
 })
 
 const createEmployeeSchema = employeeSchema.extend({
-    userId: z.string().min(1, 'El ID de usuario es obligatorio'),
+    email: z.string().min(1, 'El email es obligatorio'),
 })
 
 export type EmployeeFormData = {
     id: string
-    userId: string
     roleId: string
-    firstName: string
-    lastName: string
-    cedula: string
+    firstName: string | null
+    lastName: string | null
+    cedula: string | null
     salary: number | null
     imageUrl: string | null
     isActive: boolean
-    userEmail: string
+    email: string
 }
 
 type EmployeeFormViewProps = {
@@ -56,8 +55,7 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
     const [firstName, setFirstName] = useState(employee?.firstName ?? '')
     const [lastName, setLastName] = useState(employee?.lastName ?? '')
     const [cedula, setCedula] = useState(employee?.cedula ?? '')
-    const [email, setEmail] = useState(employee?.userEmail ?? '')
-    const [userId, setUserId] = useState('')
+    const [email, setEmail] = useState(employee?.email ?? '')
     const [roleId, setRoleId] = useState<string | null>(employee?.roleId ?? null)
     const [salary, setSalary] = useState(employee?.salary ? String(employee.salary) : '')
 
@@ -93,7 +91,7 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
         onSuccess: () => {
             utils.businessMembers.list.invalidate()
             toast.success('Empleado creado correctamente')
-            router.push('/dashboard/empleados')
+            router.push('/dashboard/employees')
         },
         onError: (error) => {
             toast.error('Error al crear el empleado: ' + error.message)
@@ -105,7 +103,7 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
             utils.businessMembers.list.invalidate()
             utils.businessMembers.getById.invalidate({ id: employee?.id })
             toast.success('Empleado actualizado correctamente')
-            router.push('/dashboard/empleados')
+            router.push('/dashboard/employees')
         },
         onError: (error) => {
             toast.error('Error al actualizar el empleado: ' + error.message)
@@ -125,7 +123,7 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
         }
 
         if (mode === 'create') {
-            const result = createEmployeeSchema.safeParse({ ...baseValues, userId })
+            const result = createEmployeeSchema.safeParse({ ...baseValues, email })
 
             if (!result.success) {
                 const errorMessage = result.error.issues[0]?.message
@@ -207,7 +205,7 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
                     </div>
 
                     <div className="space-y-3">
-                        <Label>Email</Label>
+                        <Label>Email {mode === 'create' && <span className="text-red-600 font-bold">*</span>}</Label>
                         <Input
                             type="email"
                             placeholder="empleado@ejemplo.com"
@@ -219,25 +217,9 @@ export const EmployeeFormView = ({ mode, employee }: EmployeeFormViewProps) => {
                         <p className="text-xs text-muted-foreground">
                             {mode === 'edit'
                                 ? 'El email no se puede modificar porque está vinculado a la cuenta del usuario.'
-                                : 'Referencia del email del usuario. La invitación por email todavía no está disponible.'}
+                                : 'Email del empleado. La invitación automática todavía no está disponible.'}
                         </p>
                     </div>
-
-                    {mode === 'create' && (
-                        <div className="space-y-3">
-                            <Label>ID de usuario (temporal) <span className="text-red-600 font-bold">*</span></Label>
-                            <Input
-                                placeholder="ID del usuario ya registrado en Tillstock"
-                                className="w-sm rounded-sm"
-                                value={userId}
-                                onChange={(e) => setUserId(e.target.value)}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Campo temporal: el usuario ya debe tener una cuenta creada en Tillstock. Pronto vas a poder invitarlo directamente por email.
-                            </p>
-                        </div>
-                    )}
-
                     <div className="space-y-3">
                         <Label>Rol <span className="text-red-600 font-bold">*</span></Label>
                         <Select

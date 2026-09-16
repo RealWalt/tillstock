@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { db } from '@repo/db'
+import { businessInvitations, businessMembers, db } from '@repo/db'
+import { eq, and } from "drizzle-orm"
 import { user, session, account, verification } from '@repo/db/auth-schema'
 import { Resend } from 'resend'
 
@@ -39,6 +40,29 @@ export const auth = betterAuth({
                 subject: 'Verificá tu cuenta de Tillstock',
                 html: `<p>Hola ${user.name}! <a href="${url}">Hacé clic acá para verificar tu cuenta</a></p>`
             })
+        }
+    },
+    databaseHooks: {
+        user: {
+            create: {
+                before: async (user) => {
+                    const [pendingInvitation] = await db
+                    .select()
+                    .from(businessInvitations)
+                    .innerJoin(businessMembers, eq(businessMembers.id, businessInvitations.businessMemberId))
+                    .where(and(
+                        eq(businessMembers.email, user.email),
+                        eq(businessInvitations.status, 'pending')
+                    ))
+
+                    if(pendingInvitation) {
+                        return { data: { ...user, emailVerified: true}}
+                    }
+
+                    return { data: user}
+
+                }
+            }
         }
     },
     socialProviders: {

@@ -19,9 +19,9 @@ import { useDebouncedCallback } from "use-debounce"
 
 type EmployeeRow = {
     id: string
-    firstName: string
-    lastName: string
-    userEmail: string
+    firstName: string | null
+    lastName: string | null
+    email: string
     roleName: string
     isActive: boolean
     imageUrl: string | null
@@ -140,18 +140,30 @@ export const EmpleadosView = () => {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            data.items.map((member) => (
+                            data.items.map((member) => {
+                                const fullName = member.firstName && member.lastName
+                                    ? `${member.firstName} ${member.lastName}`
+                                    : null
+                                const initials = member.firstName && member.lastName
+                                    ? `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`
+                                    : member.email.charAt(0).toUpperCase()
+
+                                return (
                                 <TableRow key={member.id} className="hover:bg-gray-50">
                                     <TableCell>
                                         <Avatar>
-                                            {member.imageUrl && <AvatarImage src={member.imageUrl} alt={member.firstName} />}
+                                            {member.imageUrl && <AvatarImage src={member.imageUrl} alt={fullName ?? member.email} />}
                                             <AvatarFallback>
-                                                {member.firstName.charAt(0)}{member.lastName.charAt(0)}
+                                                {initials}
                                             </AvatarFallback>
                                         </Avatar>
                                     </TableCell>
-                                    <TableCell>{member.firstName} {member.lastName}</TableCell>
-                                    <TableCell>{member.userEmail}</TableCell>
+                                    <TableCell>
+                                        <Link href={`/dashboard/employees/${member.id}`} className="hover:underline">
+                                            {fullName ?? <span className="text-muted-foreground italic">Invitación pendiente</span>}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>{member.email}</TableCell>
                                     <TableCell>
                                         <Badge className="bg-blue-100 text-blue-800">{member.roleName}</Badge>
                                     </TableCell>
@@ -166,7 +178,7 @@ export const EmpleadosView = () => {
                                             <Pencil />
                                         </Button>
                                         <DropdownMenu>
-                                            <DropdownMenuTrigger render={<Button variant='outline' size='icon' />}>
+                                            <DropdownMenuTrigger>
                                                 <MoreVertical />
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
@@ -182,7 +194,8 @@ export const EmpleadosView = () => {
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
-                            ))
+                                )
+                            })
                         )}
                     </TableBody>
                 </Table>

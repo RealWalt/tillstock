@@ -9,13 +9,16 @@
     "./init": "./init.ts"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@repo/typescript-config": "*"
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.20.3",
+    "typescript": "^5"
   },
   "dependencies": {
     "@repo/db": "*",
     "@trpc/server": "11.18.0",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "1.0.0-rc.4",
+    "resend": "^6.28.1",
     "zod": "^4.4.3"
   }
 }

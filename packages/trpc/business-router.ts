@@ -1,12 +1,13 @@
 import { codec, z } from "zod";
-import { protectedProcedure, router } from "./init.ts";
+import { protectedProcedure, publicProcedure, router } from "./init.ts";
 import { db } from '@repo/db'
-import { businesses, businessMembers, roles } from '@repo/db/schema'
+import { businesses, businessInvitations, businessMembers, roles } from '@repo/db/schema'
 import { and, count, desc, eq, ilike, or } from "drizzle-orm"
 import { TRPCError } from "@trpc/server";
-import { user } from "@repo/db/auth-schema";
 import { getUserBusiness } from "./get-user-business.ts";
 import { requirePermission } from "./require-permission.ts";
+import { Resend } from "resend";
+import { user } from "@repo/db/auth-schema";
 
 export const businessRouter = router({
     create: protectedProcedure
@@ -41,14 +42,6 @@ export const businessRouter = router({
         return business ?? null
     })
 })
-
-const employeeFields = {
-    firstName: z.string().min(1, 'El nombre es obligatorio'),
-    lastName: z.string().min(1, 'El apellido es obligatorio'),
-    cedula: z.string().min(1, 'La cédula es obligatoria'),
-    salary: z.number().int().optional(),
-    imageUrl: z.string().optional(),
-}
 
 export const businessMembersRouter = router({
     getMyMembership: protectedProcedure
@@ -89,41 +82,30 @@ export const businessMembersRouter = router({
             }
         }),
 
-        create: requirePermission('manage_employees')
-        .input(z.object({
-            userId: z.string().min(1, 'El ID de usuario es obligatorio'),
-            roleId: z.uuid(),
-            ...employeeFields
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const { userId, roleId, ...values } = input
-
-            const [existingUser] = await db
-            .select({ id: user.id })
-            .from(user)
-            .where(eq(user.id, userId))
-
-        if (!existingUser) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'El usuario no existe' })
-        }
-
+    create: requirePermission('manage_employees')
+    .input(z.object({
+        email: z.email(),
+        roleId: z.string(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        cedula: z.string().optional(),
+        salary: z.number().optional(),
+        imageUrl: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
         const [role] = await db
-            .select({ id: roles.id })
-            .from(roles)
-            .where(and(
-                eq(roles.id, roleId),
-                eq(roles.businessId, ctx.business.id)
-            ))
+        .select()
+        .from(roles)
+        .where(and(eq(roles.id, input.roleId), eq(roles.businessId, ctx.business.id)))
 
         if (!role) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Rol no encontrado' })
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'El rol no existe en este negocio' })
         }
 
         const [member] = await db.insert(businessMembers).values({
-            ...values,
-            userId,
-            roleId,
-            businessId: ctx.business.id,
+        ...input,
+        businessId: ctx.business.id,
+        userId: null,
         }).returning()
 
         return member
@@ -201,17 +183,18 @@ export const businessMembersRouter = router({
             id: businessMembers.id,
             userId: businessMembers.userId,
             roleId: businessMembers.roleId,
+            roleName: roles.name,
             firstName: businessMembers.firstName,
             lastName: businessMembers.lastName,
             cedula: businessMembers.cedula,
             salary: businessMembers.salary,
             imageUrl: businessMembers.imageUrl,
             isActive: businessMembers.isActive,
-            userEmail: user.email,
+            email: businessMembers.email,
             createdAt: businessMembers.createdAt,
         })
         .from(businessMembers)
-        .innerJoin(user, eq(user.id, businessMembers.userId))
+        .innerJoin(roles, eq(roles.id, businessMembers.roleId))
         .where(and(
             eq(businessMembers.id, input.id),
             eq(businessMembers.businessId, ctx.business.id)
@@ -221,7 +204,7 @@ export const businessMembersRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Miembro no encontrado' })
         }
 
-        return member
+        return { ...member, businessName: ctx.business.name }
     }),
 
     list: protectedProcedure
@@ -254,7 +237,6 @@ export const businessMembersRouter = router({
         const [totalResult] = await db
         .select({ total: count()})
         .from(businessMembers)
-        .innerJoin(user, eq(user.id, businessMembers.userId))
         .where(baseWhere)
 
         const total = totalResult?.total ?? 0
@@ -269,12 +251,11 @@ export const businessMembersRouter = router({
             lastName: businessMembers.lastName,
             imageUrl: businessMembers.imageUrl,
             isActive: businessMembers.isActive,
-            userEmail: user.email,
+            email: businessMembers.email,
             createdAt: businessMembers.createdAt,
       })
         .from(businessMembers)
         .innerJoin(roles, eq(roles.id, businessMembers.roleId))
-        .innerJoin(user, eq(user.id, businessMembers.userId))
         .where(baseWhere)
         .limit(limit)
         .offset((page - 1) * limit)
@@ -285,5 +266,130 @@ export const businessMembersRouter = router({
             total,
             totalPages: Math.ceil(total / limit)
         }
+    })
+})
+
+export const businessInvitationRouter = router({
+    getByToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+        const [invitation] = await db
+        .select({
+            id: businessInvitations.id,
+            status: businessInvitations.status,
+            expiresAt: businessInvitations.expiresAt,
+            memberEmail: businessMembers.email,
+            memberFirstName: businessMembers.firstName,
+            businessName: businesses.name,
+            roleName: roles.name,
+        })
+        .from(businessInvitations)
+        .innerJoin(businessMembers, eq(businessMembers.id, businessInvitations.businessMemberId))
+        .innerJoin(businesses, eq(businesses.id, businessMembers.businessId))
+        .innerJoin(roles, eq(roles.id, businessMembers.roleId))
+        .where(eq(businessInvitations.token, input.token))
+
+        if(!invitation) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Invitación no encontrada' })
+        }
+
+        if(invitation.status !== 'pending') {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta invitación ya fue utilizada' })
+        }
+
+        if (new Date() > invitation.expiresAt) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta invitación expiró' })
+        }
+
+        return invitation;
+    }),
+
+    accept: protectedProcedure
+    .input(z.object({ token: z.string()}))
+    .mutation(async ({ ctx, input }) => {
+        
+        const [invitation] = await db
+        .select()
+        .from(businessInvitations)
+        .where(eq(businessInvitations.token, input.token))
+
+        if(!invitation || invitation.status !== 'pending') {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invitación inválida o ya usada' })
+        } 
+
+        if (new Date() > invitation.expiresAt) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta invitación expiró' })
+        }
+
+        await db
+        .update(user)
+        .set({
+            emailVerified: true
+        })
+        .where(eq(user.id, ctx.session?.user.id)) 
+
+        await db
+        .update(businessMembers)
+        .set({ userId: ctx.session?.user.id})
+        .where(eq(businessMembers.id, invitation.businessMemberId))
+
+        await db
+        .update(businessInvitations)
+        .set({ status: 'accepted' })
+        .where(eq(businessInvitations.id, invitation.id))
+
+        return { success: true}
+    }),
+    
+    send: requirePermission('manage_employees')
+    .input(z.object({ businessMemberId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+        const resend = new Resend(process.env.RESEND_API_KEY)
+
+        const [member] = await db
+        .select()
+        .from(businessMembers)
+        .innerJoin(roles, eq(roles.id, businessMembers.roleId))
+        .where(and(
+            eq(businessMembers.id, input.businessMemberId),
+            eq(businessMembers.businessId, ctx.business.id)
+        ))
+
+        if(!member) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Empleado no encontrado' })
+        }
+
+        // Si ya tiene una invitación pendiente, la invalidamos (marcamos como expired) antes de crear una nueva
+        await db
+        .update(businessInvitations)
+        .set({ status: 'expired' })
+        .where(and(
+            eq(businessInvitations.businessMemberId, input.businessMemberId),
+            eq(businessInvitations.status, 'pending')
+        ))
+
+        const token = crypto.randomUUID()
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + 7)
+
+        await db.insert(businessInvitations).values({
+            businessMemberId: input.businessMemberId,
+            token,
+            expiresAt
+        })
+
+        await resend.emails.send({
+        from: 'Tillstock <onboarding@resend.dev>',
+        to: member.business_members.email,
+        subject: `Te invitaron a unirte a ${ctx.business.name} en Tillstock`,
+        html: `
+            <p>Hola${member.business_members.firstName ? ' ' + member.business_members.firstName : ''}!</p>
+            <p>Te invitaron a unirte a <strong>${ctx.business.name}</strong> como <strong>${member.roles.name}</strong>.</p>
+            <p><a href="${process.env.BETTER_AUTH_URL}/invite/${token}">Hacé clic acá para aceptar la invitación</a></p>
+            <p>Este link expira en 7 días.</p>
+        `
+        })
+
+        return { success: true }
     })
 })

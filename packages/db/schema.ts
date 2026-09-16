@@ -1,5 +1,6 @@
  import { boolean, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
+import { email } from "zod";
 
  export const businessTypeEnum = pgEnum('business_type', ['products', 'services', 'mixed'])
  export const currencyEnum = pgEnum('currency', ['PYG', 'USD', 'ARS', 'BRL'])
@@ -90,15 +91,26 @@ import { user } from "./auth-schema";
 
  export const businessMembers = pgTable('business_members', {
   id: uuid().primaryKey().defaultRandom(),
-  userId: text('user_Id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
   businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade'}),
   roleId: uuid('role_id').notNull().references(() => roles.id, { onDelete: 'restrict'}),
-  firstName: text('first_name').notNull(),
-  lastName: text('last_name').notNull(),
-  cedula: text('cedula').notNull(),
+  email: text('email').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  cedula: text('cedula'),
   salary: integer('salary'),
   imageUrl: text('image_url'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   removedAt: timestamp('removed_at'),
  })
+
+ export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'expired'])
+export const businessInvitations = pgTable('business_invitations', {
+  id: uuid().defaultRandom().primaryKey(),
+  businessMemberId: uuid('business_member_id').notNull().references(() => businessMembers.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  status: invitationStatusEnum('status').notNull().default('pending'),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
