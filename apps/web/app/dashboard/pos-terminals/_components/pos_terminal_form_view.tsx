@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
+import { OperatorsCard } from "./operators_card"
 
 const terminalSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio'),
@@ -153,6 +154,10 @@ export const PosTerminalFormView = ({ mode, terminal }: PosTerminalFormViewProps
                     </div>
                 )}
             </div>
+
+            {mode === 'edit' && terminal && (
+                <OperatorsCard terminalId={terminal.id} />
+            )}
         </div>
     )
 }
