@@ -130,7 +130,7 @@ import { email } from "zod";
     removedAt: timestamp('removed_at'),
   })
 
-  export const posTerminalOperatos = pgTable('pos_termianl_operators', {
+  export const posTerminalOperators = pgTable('pos_termianl_operators', {
     id: uuid().primaryKey().defaultRandom(),
     posTerminalId: uuid('pos_terminal_id').notNull().references(() => posTerminals.id, { onDelete: 'cascade' }),
     businessMemberId: uuid('business_member_id').notNull().references(() => businessMembers.id, { onDelete: 'cascade' }),
