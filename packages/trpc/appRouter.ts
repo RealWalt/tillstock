@@ -1,6 +1,7 @@
 import { businessInvitationRouter, businessMembersRouter, businessRouter } from "./business-router.ts";
 import { categoryRouter } from "./category-router.ts";
 import { router } from "./init.ts";
+import { posTerminalRouter } from "./posTerminal-router.ts";
 import { productRouter } from "./product-router.ts";
 import { rolesRouter } from "./roles-router.ts";
 import { servicesRouter } from "./services-router.ts";
@@ -14,7 +15,8 @@ export const appRouter = router({
     services: servicesRouter,
     roles: rolesRouter,
     businessMembers: businessMembersRouter,
-    businessInvitations: businessInvitationRouter
+    businessInvitations: businessInvitationRouter,
+    posTerminals: posTerminalRouter
 })
 
 export type AppRouter = typeof appRouter

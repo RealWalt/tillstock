@@ -31,6 +31,8 @@ export const AVAILABLE_PERMISSIONS = [
   { key: 'manage_employees', label: 'Gestionar empleados', group: 'Personal' },
   { key: 'manage_cashiers', label: 'Gestionar cajeros', group: 'Personal' },
   { key: 'manage_roles', label: 'Gestionar roles y permisos', group: 'Personal' },
+  { key: 'manage_pos_terminals', label: 'Gestionar cajas POS', group: 'Personal' },  // ← nuevo
+
 
   // Configuración
   { key: 'manage_settings', label: 'Configuración de la tienda', group: 'Configuración' },

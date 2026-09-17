@@ -94,7 +94,7 @@ export const EmployeeProfileView = ({ employeeId }: EmployeeProfileViewProps) =>
                             Enviar invitación
                         </Button>
                     )}
-                    <Button variant='outline' render={<Link href={`/dashboard/employees/${member.id}/edit`} />}>
+                    <Button variant='outline' nativeButton={false} render={<Link href={`/dashboard/employees/${member.id}/edit`} />}>
                         <Pencil className="h-4 w-4" />
                         Editar
                     </Button>

@@ -59,9 +59,8 @@ export const auth = betterAuth({
                         return { data: { ...user, emailVerified: true}}
                     }
 
-                    return { data: user}
-
-                }
+                    return { data: user }
+               }
             }
         }
     },
