@@ -138,3 +138,29 @@ import { email } from "zod";
     createdAt: timestamp('created_at').defaultNow().notNull(),
     revokedAt: timestamp('revoked_at'), // cuándo se le quitó el acceso, para historial
   })
+
+  export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'card', 'transfer'])
+
+  export const sales = pgTable('sales', {
+    id: uuid().defaultRandom().primaryKey(),
+    posTerminalId: uuid('pos_terminal_id').notNull().references(() => posTerminals.id),
+    businessMemberId: uuid('business_member_id').notNull().references(() => businessMembers.id),
+    businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+    total: integer('total').notNull(),
+    amountPaid: integer('amount_paid'),
+    paymentMethod: paymentMethodEnum('payment_method').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  })
+
+  export const saleItemTypeEnum = pgEnum('sale_item_type', ['product', 'service'])
+
+  export const saleItems = pgTable('sale_items', {
+    id: uuid().defaultRandom().primaryKey(),
+    saleId: uuid('sale_id').notNull().references(() => sales.id, { onDelete: 'cascade' }),
+    type: saleItemTypeEnum('type').notNull(),
+    itemId: uuid('item_id').notNull(), // productId o serviceId, según type
+    name: text('name').notNull(),        // snapshot
+    unitPrice: integer('unit_price').notNull(), // snapshot
+    quantity: integer('quantity').notNull().default(1),
+    subtotal: integer('subtotal').notNull(),
+  })
